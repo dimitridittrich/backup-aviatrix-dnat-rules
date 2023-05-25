@@ -1,0 +1,16 @@
+requests
+pyyaml
+yq
+python-multipart
+python-json-logger
+gitpython
+typing
+temp
+azure-common
+azure-core
+azure-identity
+azure-mgmt-resource
+azure-mgmt-subscription
+azure-keyvault-secrets
+python-hcl2
+azure-storage-blob>12.11.0 
