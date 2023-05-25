@@ -1,0 +1,49 @@
+schedules:
+- cron: 0 4 * * * #Change this schedule as needed.
+  displayName: "Get Brewzones components" # friendly name given to a specific schedule
+  branches:
+    include: [ master ] # which branches the schedule applies to
+trigger: none
+pr: none
+
+pool:
+  name: 'test-azagent-pool-1-test-prd-brs-2-lx' #This Agent Pool needs access (network level) to your Aviatrix.
+
+steps:
+  - task: AzureKeyVault@1
+    displayName: "Getting Secrets from KeyVault"
+    inputs:
+      azureSubscription: 'test-platform-management'
+      keyVaultName: test-kv
+      secretsFilter: '*'
+      runAsPreJob: false
+  - task: Bash@3
+    displayName: Config HTTP PAT Git URL over HTTPS
+    inputs:
+      targetType: inline
+      script: git config --global url."https://${AZDO_PERSONAL_ACCESS_TOKEN}@dev.azure.com/TEST-SA".insteadOf https://TEST-SA@dev.azure.com/TEST-SA
+    env:
+      AZDO_PERSONAL_ACCESS_TOKEN: $(AZDO-PERSONAL-ACCESS-TOKEN)
+  - script: |
+      python3 -m pip install --upgrade pip
+      pip install -r requirements.txt
+    displayName: 'Install dependencies'
+  #Change the paths and the branch below according to your needs.
+  - script: |
+        python3 --version
+        git config --global user.email "test@test.com.br"
+        git config --global user.name "srv_eng_integrations"
+        python3 tools/brewzone-avx-nats/avx-nat-bkp.py
+        git add tools/brewzone-avx-nats/current-avx-nat-rules
+        git commit -m "update aviatrix nats backups" 
+        git push -f origin HEAD:master
+    env:
+      AZDO_PERSONAL_ACCESS_TOKEN: $(AZDO-PERSONAL-ACCESS-TOKEN)
+      AZURE_CLIENT_ID: $(ARM-CLIENT-ID)
+      BRANCH: $(Build.SourceBranch)
+      AZURE_CLIENT_SECRET : $(ARM-CLIENT-SECRET)
+      AZURE_TENANT_ID : xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      AZURE_SUBSCRIPTION_ID : xxxxxxxx-xxxx-xxxx-baee-xxxxxxxxxxxx
+      AVX_USERNAME: $(AVX-USERNAME)
+      AVX_PASSWORD: $(AVX-PASSWORD)
+      AVX_CONTROLLER_IP: $(AVX-CONTROLLER-IP)
